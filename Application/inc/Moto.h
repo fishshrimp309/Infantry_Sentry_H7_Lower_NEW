@@ -9,6 +9,14 @@
 typedef struct CHASSIS
 {
 	DJI_Motor_t M3508[4];
+	
+	struct Info
+	{
+		float wheelbase;	// 轴距
+		float wheeltrack;	// 轮距
+		float wheelRadius;	// 轮半径
+		float R;			// 轮子到中心的距离
+	} info;
 } ChassisMotor_t;
 
 typedef struct Move

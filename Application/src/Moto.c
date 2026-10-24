@@ -10,8 +10,6 @@
 #include "JUDGE.h"
 #include "math.h"
 
-float test_I0,test_I1,test_I2,test_I3;
-
 ChassisMotor_t chassis = {0}; //所有底盘电机结构体 包括四个轮电�?
 float sumPowTorque =0;
 float sumPowSpeed = 0;
@@ -46,25 +44,24 @@ static inline float sgn(float val) {
     return 0.0f;
 }
 
-#define cos45   0.70710678f
+#define cos45  0.70710678f
 float threshold_speed_err = 50.0f; 
 float k_NULL = 1.5f; 
 float GAMMA = 0.03f;
-float LPF_ALPHA = 0.10f;//低通滤波系数(0.05 ~ 0.2，越小越平滑，抗震颤效果越好)
-
+float LPF_ALPHA = 0.10f;//低通滤波系数，越小越平滑
 void Torque_Control()
 {
     static float scale_smooth[4] = {1.0f, 1.0f, 1.0f, 1.0f};
 
-    move.vy = (-chassis.M3508[0].speed + chassis.M3508[1].speed - chassis.M3508[2].speed + chassis.M3508[3].speed) * 2.0f * PI / 60.0f * 0.075f * cos45 / 4.0f;
-    move.vx = ( chassis.M3508[0].speed + chassis.M3508[1].speed - chassis.M3508[2].speed - chassis.M3508[3].speed) * 2.0f * PI / 60.0f * 0.075f * cos45 / 4.0f;
-    move.vw = ( chassis.M3508[0].speed + chassis.M3508[1].speed + chassis.M3508[2].speed + chassis.M3508[3].speed) * 2.0f * PI / 60.0f * 0.075f / 0.297f / 4.0f;
+    move.vy = (-chassis.M3508[0].speed + chassis.M3508[1].speed - chassis.M3508[2].speed + chassis.M3508[3].speed) * 2.0f * PI / 60.0f * chassis.info.wheelRadius * cos45 / 4.0f;
+    move.vx = ( chassis.M3508[0].speed + chassis.M3508[1].speed - chassis.M3508[2].speed - chassis.M3508[3].speed) * 2.0f * PI / 60.0f * chassis.info.wheelRadius * cos45 / 4.0f;
+    move.vw = ( chassis.M3508[0].speed + chassis.M3508[1].speed + chassis.M3508[2].speed + chassis.M3508[3].speed) * 2.0f * PI / 60.0f * chassis.info.wheelRadius / chassis.info.R / 4.0f;
 
     float speed_pre[4];
-    speed_pre[0] = -move.vy / cos45 / 0.075f * 60.0f / 2.0f / PI + move.vx / cos45 / 0.075f * 60.0f / 2.0f / PI + move.vw * 0.297f / 0.075f * 60.0f / 2.0f / PI;
-    speed_pre[1] =  move.vy / cos45 / 0.075f * 60.0f / 2.0f / PI + move.vx / cos45 / 0.075f * 60.0f / 2.0f / PI + move.vw * 0.297f / 0.075f * 60.0f / 2.0f / PI;
-    speed_pre[2] = -move.vy / cos45 / 0.075f * 60.0f / 2.0f / PI - move.vx / cos45 / 0.075f * 60.0f / 2.0f / PI + move.vw * 0.297f / 0.075f * 60.0f / 2.0f / PI;
-    speed_pre[3] =  move.vy / cos45 / 0.075f * 60.0f / 2.0f / PI - move.vx / cos45 / 0.075f * 60.0f / 2.0f / PI + move.vw * 0.297f / 0.075f * 60.0f / 2.0f / PI;
+    speed_pre[0] = -move.vy / cos45 / chassis.info.wheelRadius * 60.0f / 2.0f / PI + move.vx / cos45 / chassis.info.wheelRadius * 60.0f / 2.0f / PI + move.vw * chassis.info.R / chassis.info.wheelRadius * 60.0f / 2.0f / PI;
+    speed_pre[1] =  move.vy / cos45 / chassis.info.wheelRadius * 60.0f / 2.0f / PI + move.vx / cos45 / chassis.info.wheelRadius * 60.0f / 2.0f / PI + move.vw * chassis.info.R / chassis.info.wheelRadius * 60.0f / 2.0f / PI;
+    speed_pre[2] = -move.vy / cos45 / chassis.info.wheelRadius * 60.0f / 2.0f / PI - move.vx / cos45 / chassis.info.wheelRadius * 60.0f / 2.0f / PI + move.vw * chassis.info.R / chassis.info.wheelRadius * 60.0f / 2.0f / PI;
+    speed_pre[3] =  move.vy / cos45 / chassis.info.wheelRadius * 60.0f / 2.0f / PI - move.vx / cos45 / chassis.info.wheelRadius * 60.0f / 2.0f / PI + move.vw * chassis.info.R / chassis.info.wheelRadius * 60.0f / 2.0f / PI;
 
     float e_slip[4] = {0.0f};
 
@@ -91,7 +88,6 @@ void Torque_Control()
 
         e_slip[i] = fmaxf(e_1, e_2);
 
-        // 计算原始 scale
         float scale_raw = 1.0f;
         if (e_slip[i] > 0.0f) {
             scale_raw = expf(-GAMMA * (e_slip[i] - threshold_speed_err));
@@ -141,6 +137,16 @@ void Chassis_InitPID()
 		PID_SetDeadzone(&chassis.M3508[3].speedPID, 0);
 }
 
+void Chassis_Init()
+{
+	chassis.info.wheelbase = 0.42f;
+	chassis.info.wheeltrack = 0.42f;
+	chassis.info.wheelRadius = 0.075f;
+	chassis.info.R = sqrtf(powf(chassis.info.wheelbase / 2, 2) + powf(chassis.info.wheeltrack / 2, 2));
+	
+	Chassis_InitPID();
+}
+
 void Task_CANMotors_Callback()
 {
 		Torque_Control();
@@ -148,10 +154,6 @@ void Task_CANMotors_Callback()
 //		{
 //		 	PID_SingleCalc(&chassis.M3508[i].speedPID,chassis.M3508[i].targetSpeed,chassis.M3508[i].speed);
 //		}
-		test_I0 = -chassis.M3508[0].speedPID.output;
-		test_I1 = chassis.M3508[1].speedPID.output;
-		test_I2 = -chassis.M3508[2].speedPID.output;
-		test_I3 = chassis.M3508[3].speedPID.output;
 	
 		PowerCtrl();
 	    USER_CAN_SetMotorCurrent(&hfdcan1, 0x200, chassis.M3508[0].speedPID.output,chassis.M3508[1].speedPID.output,chassis.M3508[2].speedPID.output,chassis.M3508[3].speedPID.output);
@@ -164,7 +166,7 @@ void Task_CANMotors_Callback()
 void OS_MotorCallback(void const * argument)
 {
 	osDelay(1500);
-	Chassis_InitPID();
+	Chassis_Init();
 	PowerCtralInit();
     for(;;)
 	    {	
