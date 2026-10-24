@@ -85,9 +85,9 @@ void Torque_Control()
 
         // B. 目标残差
         float e_2 = 0.0f;
-        if ((sgn((float)chassis.M3508[i].speed) == dir) && (speed_real_abs > speed_target_abs + threshold_speed_err)) {
-            e_2 = speed_real_abs - speed_target_abs;
-        }
+//        if ((sgn((float)chassis.M3508[i].speed) == dir) && (speed_real_abs > speed_target_abs + threshold_speed_err)) {
+//            e_2 = speed_real_abs - speed_target_abs;
+//        }
 
         e_slip[i] = fmaxf(e_1, e_2);
 
