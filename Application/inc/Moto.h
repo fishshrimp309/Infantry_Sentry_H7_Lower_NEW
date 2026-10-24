@@ -13,9 +13,9 @@ typedef struct CHASSIS
 
 typedef struct Move
 {
-	float vx; // 当前左右平移速度 mm/s
-	float vy; // 当前前后移动速度 mm/s
-	float vw; // 当前旋转速度 rad/s
+	float vx; // 当前左右平移速度 mm/s左为正
+	float vy; // 当前前后移动速度 mm/s前为正
+	float vw; // 当前旋转速度 rad/逆时针为正
 
 	float maxVx, maxVy, maxVw; // 三个分量最大速度
 
