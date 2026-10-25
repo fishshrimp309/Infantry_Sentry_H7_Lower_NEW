@@ -26,7 +26,7 @@ void PowerInit3508()
 	whell_power.transVector[1][1] = 2.5e-15;   // Torque
 	whell_power.transVector[2][2] = 0.000025;  // constant
 	whell_power.moto_type = 3508;
-	whell_power.UserPowerLimit = 70;	//120
+	whell_power.UserPowerLimit = 60;	//120
 }
 
 void PowerCtralInit()

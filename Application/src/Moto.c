@@ -48,6 +48,7 @@ static inline float sgn(float val) {
 float threshold_speed_err = 50.0f; 
 float k_NULL = 1.5f; 
 float GAMMA = 0.03f;
+float scale_min = 0.01f;
 float LPF_ALPHA = 0.10f;//低通滤波系数，越小越平滑
 void Torque_Control()
 {
@@ -91,7 +92,7 @@ void Torque_Control()
         float scale_raw = 1.0f;
         if (e_slip[i] > 0.0f) {
             scale_raw = expf(-GAMMA * (e_slip[i] - threshold_speed_err));
-            if (scale_raw < 0.01f) scale_raw = 0.1f;
+            if (scale_raw < scale_min) scale_raw = scale_min;
         }
 
         scale_smooth[i] = scale_smooth[i] * (1.0f - LPF_ALPHA) + scale_raw * LPF_ALPHA;
