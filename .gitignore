@@ -28,3 +28,6 @@
 # ���� VS Code ��¼
 .vscode/
 .history/
+
+# CMake / clangd build output
+build/
